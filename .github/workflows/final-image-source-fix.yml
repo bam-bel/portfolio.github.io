@@ -1,0 +1,42 @@
+name: Final image source mapping
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  images-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Map images only
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old_sequence = '''<div class="sequence"><div class="seq"><img src="img/safaricom_photo%20(1).jpg" alt="Billboard"><label>01 / Billboard</label></div><div class="seq"><img src="img/safaricom_photo_1.webp" alt="Transit"><label>02 / Transit</label></div><div class="seq"><img src="img/safaricom_photo_2.webp" alt="Platform"><label>03 / Platform</label></div><div class="seq"><img src="img/safaricom_photo%20(1).jpg" alt="Vehicle"><label>04 / Vehicle</label></div></div>'''
+          new_sequence = '''<div class="sequence"><div class="seq"><img src="img/safaricom_photo%20(1).jpg" alt="Billboard"><label>01 / Billboard</label></div><div class="seq"><img src="img/safaricom_photo%20(2).jpg" alt="Transit"><label>02 / Transit</label></div><div class="seq"><img src="img/safaricom_photo%20(3).jpg" alt="Platform"><label>03 / Platform</label></div><div class="seq"><img src="img/safaricom_photo.jpg" alt="Vehicle"><label>04 / Vehicle</label></div></div>'''
+          s = s.replace(old_sequence, new_sequence)
+
+          old_olympus = '''<div class="media-grid"><div class="media-card"><img src="img/olympus_lockup2.png" alt="Olympus Group identity"></div><div class="media-card"><img src="img/olympus_lockup2.png" alt="Olympus Group signage"></div></div>'''
+          new_olympus = '''<div class="media-grid"><div class="media-card"><img src="img/olympus_lockup2.png" alt="Olympus Group identity"></div><div class="media-card"><img src="img/olympus_signage2.jpg" alt="Olympus Group signage"></div></div>'''
+          s = s.replace(old_olympus, new_olympus)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit and remove workflow
+        shell: bash
+        run: |
+          git config user.name 'bam belay'
+          git config user.email 'bamlackbelay@gmail.com'
+          git add index.html
+          git commit -m 'Finalize portfolio image source mapping' || true
+          git rm .github/workflows/final-image-source-fix.yml
+          git commit -m 'Remove temporary image mapping workflow' || true
+          git push
