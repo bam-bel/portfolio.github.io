@@ -1,0 +1,153 @@
+name: Build lean Radial System v1
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  radial:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace Grid Generator with Radial System
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          start = s.find('<section class="play" id="play">')
+          if start == -1:
+              start = s.find('<section class="play">')
+          if start == -1:
+              raise SystemExit('play section not found')
+          end = s.find('</section>', start)
+          if end == -1:
+              raise SystemExit('play section end not found')
+          section = s[start:end + len('</section>')]
+
+          marker = '<div class="card"><h4>Grid Generator</h4>'
+          m = section.find(marker)
+          if m == -1:
+              raise SystemExit('Grid Generator card not found')
+          next_card = section.find('<div class="card"><h4>KPI Tree Toy</h4>', m)
+          if next_card == -1:
+              raise SystemExit('KPI Tree card marker not found')
+
+          radial_card = '''<div class="card radial-experiment">
+            <h4>Radial System</h4>
+            <div class="radial-canvas-container">
+              <canvas id="radial-canvas" aria-label="Interactive radial geometric system"></canvas>
+              <div class="radial-status"><span>●</span> <span id="radial-status-text">SYSTEM ACTIVE</span></div>
+            </div>
+            <div class="radial-controls">
+              <p class="radial-copy">Derived from a radial geometric study explored in my identity work.</p>
+              <label>Frequency <input id="radial-frequency" type="range" min="6" max="64" value="32"><b id="radial-frequency-value">32</b></label>
+              <label>Amplitude <input id="radial-amplitude" type="range" min="0" max="50" value="10"><b id="radial-amplitude-value">10</b></label>
+              <button id="radial-break" type="button">BREAK RULE ↗</button>
+            </div>
+          </div>'''
+
+          section = section[:m] + radial_card + section[next_card:]
+          s = s[:start] + section + s[end + len('</section>'):]
+
+          radial_css = '''\n/* Lean Radial System */\n.radial-experiment{min-width:0}.radial-canvas-container{position:relative;width:100%;aspect-ratio:1/1;overflow:hidden;background:#0A0F15;border-radius:16px}.radial-canvas-container canvas{width:100%;height:100%;display:block}.radial-status{position:absolute;left:12px;bottom:10px;font:500 9px var(--fm);letter-spacing:.07em;text-transform:uppercase;color:var(--accent);pointer-events:none}.radial-status span:first-child{display:inline-block;filter:drop-shadow(0 0 6px #B9885F88)}.radial-status.broken{color:var(--stone)}.radial-controls{display:flex;flex-direction:column;gap:12px;margin-top:16px}.radial-copy{font:11px/1.55 var(--fb);color:var(--muted);margin:0 0 3px}.radial-controls label{font:9px var(--fm);letter-spacing:.05em;text-transform:uppercase;color:var(--stone)}.radial-controls input[type=range]{width:100%;margin-top:7px;accent-color:var(--accent)}.radial-controls label b{float:right;color:var(--accent);font-weight:500}.radial-controls button{border:0;background:none;padding:0;text-align:left;color:var(--accent);font:600 9px var(--fm);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}.radial-controls button:hover{color:var(--ink)}.radial-controls button:disabled{opacity:.5;cursor:default}.radial-experiment.radial-broken .radial-canvas-container{background:#0A0D13}\n'''
+          s = s.replace('</style>', radial_css + '</style>', 1)
+
+          # Remove obsolete Grid Generator runtime block, if present.
+          s = re.sub(r'\(function\(\)\{var c=document\.getElementById\([\"\']cols[\"\']\).*?\}\)\(\);', '', s, count=1)
+
+          radial_js = r'''<script>
+(function(){
+  function initRadial(){
+    var canvas=document.getElementById('radial-canvas');
+    if(!canvas) return;
+    var wrap=canvas.parentElement;
+    var ctx=canvas.getContext('2d',{alpha:true});
+    var freq=document.getElementById('radial-frequency');
+    var amp=document.getElementById('radial-amplitude');
+    var freqVal=document.getElementById('radial-frequency-value');
+    var ampVal=document.getElementById('radial-amplitude-value');
+    var breakBtn=document.getElementById('radial-break');
+    var status=document.getElementById('radial-status-text');
+    var statusDot=document.querySelector('.radial-status');
+    var dpr=1, cssW=1, cssH=1, phase=0, raf=0, running=false, broken=false;
+    var sys={freq:+freq.value,amp:+amp.value,speed:.015,wobble:0};
+    var target={freq:sys.freq,amp:sys.amp,speed:.015,wobble:0};
+    var rings=4;
+
+    function resize(){
+      var r=wrap.getBoundingClientRect();
+      cssW=Math.max(1,r.width); cssH=Math.max(1,r.height);
+      dpr=Math.min(window.devicePixelRatio||1,2);
+      canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr);
+      canvas.style.width=cssW+'px'; canvas.style.height=cssH+'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    function lerp(a,b,t){return a+(b-a)*t}
+    function draw(){
+      if(!running) return;
+      sys.freq=lerp(sys.freq,target.freq,.08); sys.amp=lerp(sys.amp,target.amp,.055);
+      sys.speed=lerp(sys.speed,target.speed,.045); sys.wobble=lerp(sys.wobble,target.wobble,.03);
+      phase+=sys.speed;
+      ctx.fillStyle='rgba(10,15,21,.20)'; ctx.fillRect(0,0,cssW,cssH);
+      var cx=cssW/2,cy=cssH/2,min=Math.min(cssW,cssH),base=min*.105;
+      ctx.lineWidth=.65; ctx.strokeStyle='rgba(185,136,95,.34)';
+      ctx.fillStyle='rgba(212,196,183,.92)';
+      var f=Math.max(6,Math.min(64,sys.freq));
+      for(var r=1;r<=rings;r++){
+        var radius=base*r;
+        var prev=null;
+        for(var i=0;i<f;i++){
+          var angle=i*(Math.PI*2/f);
+          var wave=Math.sin(phase+i*.5+r)*sys.amp;
+          var noise=broken ? (Math.sin(i*12.9898+r*78.233+phase*1.7)*.5+.5-0.5)*sys.wobble*8*r : 0;
+          var rr=radius+wave+noise;
+          var x=cx+Math.cos(angle)*rr, y=cy+Math.sin(angle)*rr;
+          if(prev && !broken){ctx.beginPath();ctx.moveTo(prev.x,prev.y);ctx.lineTo(x,y);ctx.stroke()}
+          ctx.beginPath();ctx.arc(x,y,1.7,0,Math.PI*2);ctx.fill();
+          prev={x:x,y:y};
+        }
+      }
+      raf=requestAnimationFrame(draw);
+    }
+    function start(){if(running) return;running=true;cancelAnimationFrame(raf);raf=requestAnimationFrame(draw)}
+    function stop(){running=false;cancelAnimationFrame(raf)}
+
+    freq.addEventListener('input',function(){if(!broken){target.freq=+this.value;freqVal.textContent=this.value}});
+    amp.addEventListener('input',function(){if(!broken){target.amp=+this.value;ampVal.textContent=this.value}});
+    breakBtn.addEventListener('click',function(){
+      if(broken) return;
+      broken=true; breakBtn.disabled=true; breakBtn.textContent='RULE BROKEN';
+      status.textContent='ANOMALY DETECTED'; statusDot.classList.add('broken'); wrap.parentElement.classList.add('radial-broken');
+      sys.amp=Math.min(170,Math.max(90,+amp.value*7)); sys.speed=.18;
+      target.amp=Math.min(34,+amp.value*2.3); target.speed=.035; target.wobble=2.2; 
+    });
+
+    if('IntersectionObserver' in window){
+      var io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting) start(); else stop()})},{threshold:.05});
+      io.observe(wrap);
+    } else {start()}
+    window.addEventListener('resize',resize,{passive:true});
+    resize();
+    ctx.fillStyle='#0A0F15';ctx.fillRect(0,0,cssW,cssH);
+    start();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initRadial); else initRadial();
+})();
+</script>'''
+          s=s.replace('</body>', radial_js+'</body>', 1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit and remove workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/build-radial-v1.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/build-radial-v1.yml
+          git commit -m "Replace grid toy with performant radial system" || exit 0
+          git push
