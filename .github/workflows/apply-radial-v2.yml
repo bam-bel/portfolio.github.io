@@ -1,0 +1,40 @@
+name: Apply Radial System v2
+on:
+  push:
+    branches: [upgrade/radial-canvas-v2]
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Integrate Canvas runtime
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          pattern = r"\n\(function\(\)\{\s*const svg=document\.getElementById\('radialSvg'\);.*?\n\}\)\(\);"
+          s2, n = re.subn(pattern, '\n', s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit(f'Expected one legacy radial runtime block, found {n}')
+
+          tag = '<script src="bb-radial-v2.js"></script>'
+          if tag not in s2:
+              if '</body>' not in s2:
+                  raise SystemExit('Missing </body> tag')
+              s2 = s2.replace('</body>', tag + '</body>', 1)
+
+          p.write_text(s2, encoding='utf-8')
+          PY
+          rm -f .github/workflows/apply-radial-v2.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html bb-radial-v2.js .github/workflows/apply-radial-v2.yml
+          git commit -m "Upgrade Radial System to production Canvas v2"
+          git push
