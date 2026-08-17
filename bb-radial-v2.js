@@ -12,10 +12,25 @@
     canvas.id='radial-canvas-v2';
     canvas.setAttribute('role','img');
     canvas.setAttribute('aria-label','Interactive concentric radial geometry experiment');
-    canvas.style.cssText='width:100%;height:100%;display:block;cursor:crosshair;background:#0A0F15;';
+    canvas.style.cssText='width:100%;height:100%;display:block;cursor:none;background:#0A0F15;';
     stage.appendChild(canvas);
     var ctx=canvas.getContext('2d',{alpha:true});
     if(!ctx) return;
+
+    /* Localized DOM cursor — scoped to the Playground only. */
+    var cursor=document.createElement('div');
+    cursor.className='canvas-cursor';
+    cursor.setAttribute('aria-hidden','true');
+    stage.appendChild(cursor);
+    var cursorStyle=document.createElement('style');
+    cursorStyle.textContent=''+
+      '.radial-stage{position:relative}'+
+      '.radial-stage,.radial-stage canvas,.radial-stage *{cursor:none!important}'+
+      '.canvas-cursor{position:absolute;left:0;top:0;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#FAF9F6;pointer-events:none;mix-blend-mode:difference;z-index:20;opacity:0;transform:translate3d(-100px,-100px,0);transition:width .3s cubic-bezier(.16,1,.3,1),height .3s cubic-bezier(.16,1,.3,1),margin .3s cubic-bezier(.16,1,.3,1),background-color .3s ease,border-color .3s ease,box-shadow .3s ease,opacity .2s ease}'+
+      '.canvas-cursor.is-interacting{width:32px;height:32px;margin:-16px 0 0 -16px;background:transparent;border:1px solid #FAF9F6}'+
+      '.canvas-cursor.is-broken{width:14px;height:14px;margin:-7px 0 0 -7px;background:#B9885F;border:0;mix-blend-mode:normal;box-shadow:0 0 12px rgba(185,136,95,.4)}'+
+      '@media (pointer:coarse), (prefers-reduced-motion:reduce){.canvas-cursor{display:none!important}}';
+    document.head.appendChild(cursorStyle);
 
     var freq=document.getElementById('radialFreq');
     var amp=document.getElementById('radialAmp');
@@ -62,6 +77,13 @@
       return influence*18*(broken?-0.55:1);
     }
 
+    function setCursorState(active){
+      if(reduced.matches || !mouse.active){cursor.classList.remove('is-interacting');return;}
+      if(broken){cursor.classList.remove('is-interacting');cursor.classList.add('is-broken');return;}
+      cursor.classList.toggle('is-interacting',active);
+      cursor.classList.remove('is-broken');
+    }
+
     function setTelemetry(label){
       telemetry.textContent='R:72 / 48 / 84 · F:'+Math.round(sys.freq)+' · A:'+Math.round(sys.amp)+' · P:'+(locked?'LOCKED':'FREE');
       if(label) state.textContent=label;
@@ -96,6 +118,7 @@
       ctx.setLineDash([]);
 
       var f=Math.max(6,Math.min(64,sys.freq));
+      var activeMagneticField=false;
       for(var r=1;r<=rings;r++){
         var radius=base*r*ringScale[r-1];
         var prev=null;
@@ -106,6 +129,7 @@
           var rr=radius+wave+chaotic;
           var x=Math.cos(angle)*rr,y=Math.sin(angle)*rr;
           var force=hoverForce(cx+x,cy+y);
+          if(force!==0) activeMagneticField=true;
           rr+=force;
           x=Math.cos(angle)*rr;y=Math.sin(angle)*rr;
 
@@ -122,6 +146,7 @@
 
       ctx.beginPath();ctx.arc(0,0,2.2,0,Math.PI*2);ctx.fillStyle='rgba(185,136,95,.65)';ctx.fill();
       ctx.restore();
+      setCursorState(activeMagneticField);
 
       if(broken && !equilibrium && now-breakStarted>1600){equilibrium=true;setTelemetry('NEW EQUILIBRIUM');status.textContent='● SYSTEM REORGANIZED'}
       else if(!broken){setTelemetry('NORMAL')}
@@ -154,16 +179,37 @@
       target.wobble=2.5;
       sys.amp=Math.max(sys.amp*2,120);
       sys.phaseSpeed=reduced.matches?0.004:0.16;
+      cursor.classList.remove('is-interacting');
+      cursor.classList.add('is-broken');
       if(artifact){var n=parseInt((artifact.textContent||'R-001').replace(/\D/g,''),10)||1;artifact.textContent='R-'+String(n+1).padStart(3,'0')}
     });
 
     canvas.addEventListener('pointermove',function(e){
-      var rect=canvas.getBoundingClientRect();mouse.x=e.clientX-rect.left;mouse.y=e.clientY-rect.top;mouse.active=true;
+      if(reduced.matches || e.pointerType==='touch') return;
+      var rect=canvas.getBoundingClientRect();
+      mouse.x=e.clientX-rect.left;mouse.y=e.clientY-rect.top;mouse.active=true;
+      cursor.style.opacity='1';
+      cursor.style.transform='translate3d('+mouse.x+'px,'+mouse.y+'px,0)';
     },{passive:true});
-    canvas.addEventListener('pointerleave',function(){mouse.active=false;mouse.x=-1e5;mouse.y=-1e5},{passive:true});
+    canvas.addEventListener('pointerenter',function(e){
+      if(reduced.matches || e.pointerType==='touch') return;
+      cursor.style.opacity='1';
+    },{passive:true});
+    canvas.addEventListener('pointerleave',function(){
+      mouse.active=false;mouse.x=-1e5;mouse.y=-1e5;
+      cursor.style.opacity='0';
+      setCursorState(false);
+    },{passive:true});
 
     if(window.ResizeObserver){new ResizeObserver(resize).observe(stage)}else{window.addEventListener('resize',resize,{passive:true})}
-    reduced.addEventListener?.('change',function(){sys.phaseSpeed=reduced.matches?0.001:0.015;target.phaseSpeed=reduced.matches?0.001:0.015});
+    reduced.addEventListener?.('change',function(){
+      sys.phaseSpeed=reduced.matches?0.001:0.015;
+      target.phaseSpeed=reduced.matches?0.001:0.015;
+      cursor.style.opacity='0';
+      mouse.active=false;
+      mouse.x=-1e5;mouse.y=-1e5;
+      setCursorState(false);
+    });
 
     resize();setTelemetry('NORMAL');start();
   }
