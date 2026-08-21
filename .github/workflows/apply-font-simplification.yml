@@ -1,0 +1,30 @@
+name: Apply simpler typography
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  simplify-fonts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Simplify font system
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap', 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap')
+          s = s.replace("--fd:'Instrument Serif',serif", "--fd:'Manrope',sans-serif")
+          p.write_text(s, encoding='utf-8')
+      - name: Commit and remove workflow
+        shell: bash
+        run: |
+          git config user.name 'bam-bel'
+          git config user.email 'bamlackbelay@gmail.com'
+          git add index.html
+          git commit -m 'Simplify portfolio typography to Manrope and IBM Plex Mono'
+          git rm .github/workflows/apply-font-simplification.yml
+          git commit -m 'Remove temporary font workflow'
+          git push
