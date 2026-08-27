@@ -1,165 +1,20 @@
-/* Phase 3–4: Operating Mode restructure + project standardization */
-(function () {
+/* Complete Phase 1–4 runtime: Phase 2 hero + Radial Playground + Phase 3–4 structure. */
+(function(){
   'use strict';
-
-  function injectStyles() {
-    if (document.getElementById('phase34-style')) return;
-    var style = document.createElement('style');
-    style.id = 'phase34-style';
-    style.textContent = `
-      .phase34-operating{padding-top:0!important}
-      .phase34-operating .head{margin-bottom:28px!important}
-      .phase34-mode-copy{max-width:54ch!important;color:var(--muted)!important}
-      .phase34-capabilities{display:flex;gap:22px;flex-wrap:wrap;margin-top:34px;align-items:baseline}
-      .phase34-capabilities .eyebrow{margin-right:8px}
-      .phase34-capabilities a{font:800 12px 'Montserrat',sans-serif!important;text-transform:uppercase;letter-spacing:.02em;color:var(--stone);transition:color .2s ease}
-      .phase34-capabilities a:hover,.phase34-capabilities a:focus-visible{color:#38bdf8}
-      .phase34-filters{display:flex;gap:20px;flex-wrap:wrap;align-items:center;margin-top:38px;padding-top:10px}
-      .phase34-filters .filter{padding:0!important;font:800 10px 'Montserrat',sans-serif!important;letter-spacing:.03em}
-      .phase34-filters .filter.active,.phase34-filters .filter:hover{background:transparent!important;color:#38bdf8!important}
-      .phase34-project-meta{display:flex;gap:12px;flex-wrap:wrap;align-items:baseline;margin-top:12px}
-      .phase34-project-meta .phase34-type{font:500 10px var(--fm);letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.72)}
-      .phase34-project-meta .phase34-status{font:500 9px var(--fm);letter-spacing:.08em;text-transform:uppercase;color:#38bdf8}
-      .phase34-case-intro{display:grid;grid-template-columns:1.2fr .8fr;gap:48px;align-items:end;margin-bottom:40px}
-      .phase34-case-label{font:800 10px 'Montserrat',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#38bdf8}
-      .phase34-case-copy{max-width:62ch;color:var(--muted)}
-      .phase34-decision-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:rgba(255,255,255,.08);margin-top:32px}
-      .phase34-decision-grid .step{background:#0C121A;padding:26px 18px;border:0!important;min-width:0}
-      .phase34-decision-grid .step b{font:800 10px 'JetBrains Mono',monospace;color:#38bdf8}
-      .phase34-decision-grid .step strong{font-family:'Montserrat',sans-serif!important;font-weight:800!important}
-      .phase34-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.08);margin-top:1px}
-      .phase34-metrics .metric{border:0!important;background:#0C121A}
-      .phase34-note{margin-top:24px;font:500 10px var(--fm);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-      @media(max-width:900px){
-        .phase34-capabilities{gap:14px 18px}
-        .phase34-decision-grid{grid-template-columns:1fr 1fr}
-        .phase34-metrics{grid-template-columns:1fr}
-        .phase34-case-intro{grid-template-columns:1fr;gap:18px}
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  function moveFilterIntoOperatingMode() {
-    var section = document.querySelector('.section:not(#work)');
-    var filters = document.querySelector('.filters');
-    if (!section || !filters || section.dataset.phase34) return;
-    section.dataset.phase34 = '1';
-    section.classList.add('phase34-operating');
-    var head = section.querySelector('.head');
-    var tdb = section.querySelector('.tdb');
-    if (head) {
-      var copy = head.querySelector('p');
-      if (copy) copy.classList.add('phase34-mode-copy');
-    }
-
-    var capability = document.createElement('div');
-    capability.className = 'phase34-capabilities';
-    capability.innerHTML = '<span class="eyebrow">Capabilities</span>' +
-      ['Strategy','Analytics','Brand','Campaign','Digital','Spatial','Technology']
-        .map(function (x) { return '<a href="#work" data-mode="'+x.toLowerCase()+'">'+x+'</a>'; }).join('');
-
-    var filterWrap = document.createElement('div');
-    filterWrap.className = 'phase34-filters';
-    var filterButtons = filters.querySelector('#filters');
-    if (filterButtons) {
-      Array.prototype.slice.call(filterButtons.children).forEach(function (node) {
-        filterWrap.appendChild(node);
-      });
-    }
-
-    if (tdb) {
-      tdb.parentNode.insertBefore(capability, tdb.nextSibling);
-      tdb.parentNode.insertBefore(filterWrap, capability.nextSibling);
-    } else {
-      section.querySelector('.wrap').appendChild(capability);
-      section.querySelector('.wrap').appendChild(filterWrap);
-    }
-    filters.remove();
-  }
-
-  function collapseStandaloneCapabilities() {
-    var cap = document.querySelector('.cap');
-    if (cap) cap.setAttribute('hidden','hidden');
-  }
-
-  function standardizeProjects() {
-    document.querySelectorAll('.project').forEach(function (project, index) {
-      if (project.dataset.phase34) return;
-      project.dataset.phase34 = '1';
-      var detail = project.querySelector(':scope > div:not(.media):not(.num)');
-      if (!detail) return;
-      var h3 = detail.querySelector('h3');
-      var meta = detail.querySelector('.meta');
-      var status = detail.querySelector('.status');
-      if (!h3) return;
-      var metaRow = document.createElement('div');
-      metaRow.className = 'phase34-project-meta';
-      var type = document.createElement('span');
-      type.className = 'phase34-type';
-      type.textContent = meta ? meta.textContent : '';
-      var state = document.createElement('span');
-      state.className = 'phase34-status';
-      state.textContent = status ? status.textContent : ('PROJECT '+String(index+1).padStart(2,'0'));
-      metaRow.append(type,state);
-      if (meta) meta.replaceWith(metaRow); else detail.appendChild(metaRow);
-      if (status) status.remove();
-      var eyebrow = document.createElement('div');
-      eyebrow.className = 'phase34-case-label';
-      eyebrow.textContent = 'WORK / '+String(index+1).padStart(2,'0');
-      detail.insertBefore(eyebrow, h3);
-    });
-  }
-
-  function upgradeCareerOS() {
-    var career = document.getElementById('career');
-    if (!career || career.dataset.phase34) return;
-    career.dataset.phase34 = '1';
-    var wrap = career.querySelector('.wrap');
-    if (!wrap) return;
-    var lead = wrap.querySelector('.lead');
-    var row = wrap.querySelector('.row');
-    var h2 = wrap.querySelector('h2');
-    var engine = wrap.querySelector('.engine');
-    var metrics = wrap.querySelector('.metrics');
-    if (row) row.classList.add('phase34-case-label');
-    if (h2 && lead) {
-      var intro = document.createElement('div');
-      intro.className = 'phase34-case-intro';
-      var left = document.createElement('div');
-      var right = document.createElement('div');
-      left.appendChild(h2);
-      right.appendChild(lead);
-      intro.append(left,right);
-      if (engine) wrap.insertBefore(intro, engine);
-    }
-    if (engine) engine.className = 'engine phase34-decision-grid';
-    if (metrics) metrics.className = 'metrics phase34-metrics';
-    var note = document.createElement('div');
-    note.className = 'phase34-note';
-    note.textContent = 'DECISION LOGIC / FRAME → TEST → MODEL → PRIORITIZE → DECIDE';
-    wrap.appendChild(note);
-  }
-
-  function wireCapabilityLinks() {
-    document.querySelectorAll('.phase34-capabilities a[data-mode]').forEach(function (link) {
-      link.addEventListener('click', function (e) {
-        var mode = link.getAttribute('data-mode');
-        var target = document.querySelector('.filter[data-f="'+mode+'"]');
-        if (target) { e.preventDefault(); target.click(); document.getElementById('work')?.scrollIntoView({behavior:'smooth'}); }
-      });
-    });
-  }
-
-  function run() {
-    injectStyles();
-    moveFilterIntoOperatingMode();
-    collapseStandaloneCapabilities();
-    standardizeProjects();
-    upgradeCareerOS();
-    wireCapabilityLinks();
-  }
-
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded',run,{once:true});
-  else run();
+  var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function css(){if(document.getElementById('phase14-runtime-css'))return;var s=document.createElement('style');s.id='phase14-runtime-css';s.textContent=`
+    .phase34-operating-meta{margin-top:42px}.phase34-operating-head{margin-bottom:42px}.phase34-operating-copy{display:grid;grid-template-columns:1fr minmax(280px,520px);gap:40px;align-items:end;margin-top:14px}.phase34-operating-copy p{color:var(--ink-dim);max-width:54ch;font-size:14px}.phase34-capabilities{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline;margin-top:40px}.phase34-capabilities a{font-family:var(--f-body);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-dim);transition:color .25s var(--ease)}.phase34-capabilities a:hover,.phase34-capabilities a:focus-visible{color:#38bdf8}.phase34-filters{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-top:26px}.phase34-filters .filter-list{display:flex;gap:18px;flex-wrap:wrap}.phase34-filters .filter-btn{font-family:var(--f-body);font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:0;border:0;background:transparent;color:var(--ink-dim)}.phase34-filters .filter-btn.active,.phase34-filters .filter-btn:hover{color:#38bdf8}.phase34-work-label{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--accent);margin-bottom:10px}.phase34-case-intro{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:end;margin-bottom:40px}.phase34-case-label{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}.phase34-decision-note{margin-top:24px;font-family:var(--f-mono);font-size:10px;letter-spacing:.07em;color:var(--ink-dim);text-transform:uppercase}.radial-experiment .pg-radial-frame{position:relative;height:320px;background:var(--accent-dim);margin-bottom:20px;overflow:hidden}.radial-experiment .pg-radial-frame canvas{display:block;width:100%;height:100%;cursor:crosshair}.radial-experiment .pg-status{position:absolute;left:14px;bottom:12px;display:flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}.radial-experiment .pg-status-dot{width:7px;height:7px;background:var(--accent)}.radial-experiment .pg-status-dot.anomaly{background:#B3402C}.radial-experiment .pg-break-btn{appearance:none;border:1px solid var(--ink);background:transparent;color:var(--ink);font-family:var(--f-body);font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:10px 18px;cursor:pointer}.radial-experiment .pg-break-btn:hover{background:var(--ink);color:var(--bg)}.radial-experiment .radial-note{margin-top:10px;font-size:12px;color:var(--ink-dim)}.hidden-by-filter{display:none!important}
+    @media(max-width:780px){.phase34-operating-copy{grid-template-columns:1fr;gap:18px}.phase34-capabilities{gap:12px 18px}.phase34-filters .filter-list{flex-wrap:nowrap;overflow:auto;white-space:nowrap;padding-bottom:4px}.phase34-case-intro{grid-template-columns:1fr;gap:18px}.radial-experiment .pg-radial-frame{height:280px}}
+  `;document.head.appendChild(s)}
+  function installHero(){var hero=document.querySelector('.hero');if(!hero)return;var sf=document.getElementById('starfield');if(!sf){hero.innerHTML=`<canvas id="starfield" class="hero-starfield" aria-hidden="true"></canvas><div class="wrap hero-grid"><div class="hero-text" id="heroText"><div class="eyebrow reveal in">Business &amp; Product Analytics · Visual Design · Creative Strategy</div><h1 class="hero-title reveal in reveal-d1">I make <em>complex</em> things clear.</h1><div class="hero-sub reveal in reveal-d2">Systems · Products · Visual Experiences</div><p class="hero-line reveal in reveal-d3">Beamlak Belay moves between strategy, analysis, brand identity, and visual craft — using structured thinking and applied technology to turn fragmented problems into legible systems.</p></div><div class="hero-portrait reveal in reveal-d2" id="heroPortrait"><img src="img/portrait-cutout-final.png" alt="Beamlak Belay"></div></div>`;sf=document.getElementById('starfield')}
+    var ctx=sf.getContext('2d'),w=1,h=1,d=Math.min(devicePixelRatio||1,2),stars=[];function resize(){w=hero.clientWidth;h=hero.clientHeight;d=Math.min(devicePixelRatio||1,2);sf.width=Math.round(w*d);sf.height=Math.round(h*d);ctx.setTransform(d,0,0,d,0,0);stars=[];for(var i=0,n=Math.round(w*h/9000);i<n;i++)stars.push({x:Math.random()*w,y:Math.random()*h,r:.3+Math.random()*1.3,a:.25+Math.random()*.5,p:Math.random()*Math.PI*2,s:.15+Math.random()*.4})}function draw(t){ctx.clearRect(0,0,w,h);for(var i=0;i<stars.length;i++){var q=stars[i],a=q.a+(reduced?0:Math.sin(t*.001*q.s+q.p)*.25);ctx.fillStyle='rgba(244,241,236,'+Math.max(0,a)+')';ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,Math.PI*2);ctx.fill()}if(!reduced)requestAnimationFrame(draw)}resize();window.addEventListener('resize',resize,{passive:true});draw(0);
+    var nav=document.querySelector('nav'),portrait=document.getElementById('heroPortrait'),text=document.getElementById('heroText');function scrollHero(){var y=window.scrollY,hx=hero.offsetHeight,p=Math.min(Math.max(y/(hx*.9),0),1);if(nav)nav.classList.toggle('on-dark',y<hx-60);if(!reduced){if(portrait){portrait.style.transform='scale('+(1-p*.35).toFixed(3)+') translateY('+(p*40).toFixed(1)+'px)';portrait.style.opacity=(1-p*.85).toFixed(3);portrait.style.filter='blur('+(p*6).toFixed(2)+'px)'}if(text){text.style.opacity=(1-p*.9).toFixed(3);text.style.transform='translateY('+(p*-20).toFixed(1)+'px)'}}}window.addEventListener('scroll',scrollHero,{passive:true});scrollHero()}
+  function installOperating(){var section=document.querySelector('.tdb');if(!section)return;section.id='operating-mode';if(!section.querySelector('.phase34-operating-head')){var grid=section.querySelector('.tdb-grid'),wrap=section.querySelector('.wrap');var head=document.createElement('div');head.className='phase34-operating-head';head.innerHTML='<div class="eyebrow">01 / Operating Mode</div><div class="phase34-operating-copy"><h2 class="title">Three modes.<br><span>One practice.</span></h2><p>Every project moves through a different balance of strategy, making and implementation. The point is not to pick a discipline. It is to connect them.</p></div>';wrap.insertBefore(head,grid)}var wrap=section.querySelector('.wrap');if(!wrap.querySelector('.phase34-operating-meta')){var meta=document.createElement('div');meta.className='phase34-operating-meta';meta.innerHTML='<div class="phase34-capabilities"><span class="eyebrow">Capabilities</span>'+['Strategy','Analytics','Brand','Campaign','Digital','Spatial','Technology'].map(function(x){return '<a href="#work" data-mode="'+x.toLowerCase()+'">'+x+'</a>'}).join('')+'</div><div class="phase34-filters"><span class="eyebrow">Filter</span><div class="filter-list" id="filterBar">'+['All','Strategy','Analytics','Brand','Campaign','Digital','Spatial'].map(function(x,i){return '<button class="filter-btn'+(i===0?' active':'')+'" data-filter="'+(i===0?'all':x.toLowerCase())+'">'+x+'</button>'}).join('')+'</div></div>';wrap.appendChild(meta)}var cap=document.querySelector('.cap');if(cap)cap.hidden=true}
+  function standardizeProjects(){document.querySelectorAll('.project').forEach(function(p,i){var body=p.querySelector('.project-body'),h3=body&&body.querySelector('h3');if(!body||!h3||body.dataset.p34)return;body.dataset.p34='1';var label=document.createElement('div');label.className='phase34-work-label';label.textContent='WORK / '+String(i+1).padStart(2,'0');body.insertBefore(label,h3)})}
+  function upgradeCareer(){var c=document.getElementById('career-os');if(!c||c.dataset.p34)return;c.dataset.p34='1';var wrap=c.querySelector('.wrap'),h3=wrap&&wrap.querySelector('h3'),lead=wrap&&wrap.querySelector('.flagship-lede'),engine=wrap&&wrap.querySelector('.engine');if(!wrap||!h3||!lead)return;var intro=document.createElement('div');intro.className='phase34-case-intro';var left=document.createElement('div'),right=document.createElement('div');var tag=document.createElement('div');tag.className='phase34-case-label';tag.textContent='CASE STUDY / 01';left.appendChild(tag);left.appendChild(h3);right.appendChild(lead);intro.append(left,right);wrap.insertBefore(intro,engine);var note=document.createElement('div');note.className='phase34-decision-note';note.textContent='DECISION LOGIC / FRAME → TEST → MODEL → PRIORITIZE → DECIDE';wrap.appendChild(note)}
+  function wireFilters(){var bar=document.getElementById('filterBar');if(!bar)return;var projects=document.querySelectorAll('.project');bar.addEventListener('click',function(e){var b=e.target.closest('.filter-btn');if(!b)return;bar.querySelectorAll('.filter-btn').forEach(function(x){x.classList.remove('active')});b.classList.add('active');var f=b.dataset.filter;projects.forEach(function(p){var tax=(p.dataset.tax||'').split(' ');p.classList.toggle('hidden-by-filter',f!=='all'&&tax.indexOf(f)<0)})});bar.parentElement.parentElement.querySelectorAll('.phase34-capabilities a[data-mode]').forEach(function(a){a.addEventListener('click',function(e){var b=bar.querySelector('.filter-btn[data-filter="'+a.dataset.mode+'"]');if(b){e.preventDefault();b.click();var work=document.getElementById('work');if(work)work.scrollIntoView({behavior:'smooth'})}})})}
+  function installRadial(){var card=document.querySelector('.pg-card');if(!card)return;if(card.querySelector('#radialCanvas'))return;card.innerHTML='<h4>Radial System</h4><div class="pg-radial-frame"><canvas id="radialCanvas"></canvas><div class="pg-status"><span class="pg-status-dot" id="radialStatusDot"></span><span id="radialStatusText">SYSTEM ACTIVE</span></div></div><div class="pg-controls"><label>Frequency <input type="range" id="radialFreq" min="6" max="64" value="32"><span id="radialFreqVal">32</span></label><label>Amplitude <input type="range" id="radialAmp" min="0" max="50" value="10"><span id="radialAmpVal">10</span></label></div><button id="radialBreak" class="pg-break-btn">Break Rule ↗</button><p class="radial-note">Derived from a radial geometric study. Manipulate the constraints, then break them.</p>';var c=document.getElementById('radialCanvas'),f=document.getElementById('radialFreq'),a=document.getElementById('radialAmp'),br=document.getElementById('radialBreak'),ctx=c.getContext('2d'),d=1,w=1,h=1,phase=0,broken=false,mouse={x:-9999,y:-9999},sys={freq:32,amp:10,s:reduced?0:.015,wb:0},tar={freq:32,amp:10,s:reduced?0:.03,wb:0};function rz(){var r=c.parentElement.getBoundingClientRect();d=Math.min(devicePixelRatio||1,2);w=r.width;h=r.height;c.width=w*d;c.height=h*d;ctx.setTransform(d,0,0,d,0,0)}function lerp(x,y,t){return x+(y-x)*t}function noise(i,r,p){return Math.sin(i*12.9898+r*78.233+p*1.731)*.5}c.addEventListener('mousemove',function(e){var r=c.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top},{passive:true});c.addEventListener('mouseleave',function(){mouse.x=mouse.y=-9999});f.addEventListener('input',function(){if(!broken)tar.freq=+this.value;document.getElementById('radialFreqVal').textContent=this.value});a.addEventListener('input',function(){if(!broken)tar.amp=+this.value;document.getElementById('radialAmpVal').textContent=this.value});br.addEventListener('click',function(){broken=true;br.disabled=true;br.textContent='RULE BROKEN';document.getElementById('radialStatusDot').classList.add('anomaly');document.getElementById('radialStatusText').textContent='ANOMALY DETECTED';sys.amp=150;sys.s=reduced?.01:.2;tar.amp=(+a.value)*2.5;tar.s=reduced?.002:.03;tar.wb=2.5});function draw(){ctx.fillStyle=reduced?'rgba(247,246,243,1)':'rgba(247,246,243,.18)';ctx.fillRect(0,0,w,h);sys.freq=lerp(sys.freq,tar.freq,.05);sys.amp=lerp(sys.amp,tar.amp,.012);sys.s=lerp(sys.s,tar.s,.018);sys.wb=lerp(sys.wb,tar.wb,.01);phase+=sys.s;var cx=w/2,cy=h/2,base=w*.12;ctx.fillStyle='rgba(17,23,33,.9)';for(var r=1;r<=4;r++){var rad=base*r,prev=null;for(var i=0;i<sys.freq;i++){var ang=i*(Math.PI*2/sys.freq),rr=rad+Math.sin(phase+i*.5+r)*sys.amp+(broken?noise(i,r,phase)*sys.wb*r*10:0),px=cx+Math.cos(ang)*rr,py=cy+Math.sin(ang)*rr,dist=Math.hypot(px-mouse.x,py-mouse.y);if(!reduced&&dist<100){var inf=Math.max(0,1-dist/100);rr+=(broken?-1:1)*inf*inf*18;px=cx+Math.cos(ang)*rr;py=cy+Math.sin(ang)*rr}if(prev&&!broken){ctx.strokeStyle='rgba(185,136,95,'+(1-r*.15)+')';ctx.lineWidth=.55;ctx.beginPath();ctx.moveTo(prev.x,prev.y);ctx.lineTo(px,py);ctx.stroke()}ctx.beginPath();ctx.arc(px,py,1.6,0,Math.PI*2);ctx.fill();prev={x:px,y:py}}}if(!reduced)requestAnimationFrame(draw)}rz();window.addEventListener('resize',rz,{passive:true});draw()}
+  function installRoll(){var selector=['.hero-title','.hero-sub','.tdb-label','.work-head h2','.project-body h3','.flagship h3','.how-statement','.bridge h3','.contact h2','.nav-links a','.filter-btn','.contact-links a','.phase34-capabilities a'].join(',');document.querySelectorAll(selector).forEach(function(el){if(el.dataset.rollReady||!el.textContent.trim())return;el.dataset.rollReady='true';var html=el.innerHTML,stage=document.createElement('span'),normal=document.createElement('span'),hover=document.createElement('span');stage.className='roll-stage';normal.className='roll-line roll-normal';hover.className='roll-line roll-hover';normal.innerHTML=html;hover.innerHTML=html;hover.setAttribute('aria-hidden','true');stage.append(normal,hover);el.innerHTML='';el.appendChild(stage);el.classList.add('roll-target')})}
+  function run(){css();installHero();installOperating();standardizeProjects();upgradeCareer();wireFilters();installRadial();installRoll()}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run();
 })();
